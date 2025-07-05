@@ -30,6 +30,7 @@ const searchInput = document.getElementById('searchInput');
 // 'DOMContentLoaded' means "when the HTML page is fully loaded"
 document.addEventListener('DOMContentLoaded', function() {
     // Call these functions when the page loads
+    console.log('DOM loaded'); // Debug log
     initializeApp();        // Set up the application
     setupEventListeners();  // Set up all our button clicks and form submissions
     loadContacts();         // Load contacts from the database
@@ -51,8 +52,15 @@ function initializeApp() {
     // Get reference to the add player form
     const addPlayerForm = document.getElementById('addPlayerForm');
     if (addPlayerForm) {
-        // Listen for form submission (when user clicks submit or presses Enter)
-        addPlayerForm.addEventListener('submit', handleAddPlayer);
+        // Remove any existing listeners first
+        const newForm = addPlayerForm.cloneNode(true);
+        addPlayerForm.parentNode.replaceChild(newForm, addPlayerForm);
+        
+        // Add the event listener
+        newForm.addEventListener('submit', function(event) {
+            console.log('Form event listener triggered'); // Debug log
+            handleAddPlayer(event);
+        });
     }
     
     // WINDOW EVENT LISTENER - Listen for clicks anywhere on the page
@@ -209,43 +217,40 @@ function closeAddPlayerModal() {
 
 // Function to handle adding a new player
 function handleAddPlayer(event) {
-    // Prevent the default form submission behavior (page reload)
     event.preventDefault();
+    console.log('Form submitted'); // Debug log
     
-    // FormData is a built-in JavaScript object that captures form data
     const formData = new FormData(event.target);
-    
-    // Create a player object with data from the form
-    const playerData = {
-        // .get() method retrieves the value of a form field by name
-        // .trim() removes extra spaces from the beginning and end
+    const pokemonData = {
         name: formData.get('name').trim(),
         Type1: formData.get('Type1'),
-        // || null means "if Type2 is empty, use null instead"
-        Type2: formData.get('Type2') || null,
-        // parseInt() converts a string to a number
+        Type2: formData.get('Type2') || '',
         DexNum: parseInt(formData.get('DexNum')),
-        // Ternary operator: condition ? value_if_true : value_if_false
         Extra: formData.get('Extra') ? formData.get('Extra').trim() : null
     };
+
+    console.log('Pokemon Data:', pokemonData); // Debug log
     
-    // Validate the data before adding it
-    if (!validatePlayerData(playerData)) {
-        return; // Stop execution if validation fails
+    // Determine which team to add to based on which button was clicked
+    const teamNumber = event.submitter.textContent.includes('Player 1') ? 1 : 2;
+    console.log('Team Number:', teamNumber); // Debug log
+    
+    // Validate data before adding
+    if (!validatePlayerData(pokemonData)) {
+        return;
     }
-    
-    // Add the new player to our players array
-    players.push(playerData);
-    
-    // Show success message to the user
-    showStatusMessage('Player added successfully!', 'success');
-    
-    // Close the modal popup
-    closeAddPlayerModal();
-    
-    // console.log() prints information to the browser's developer console (for debugging)
-    console.log('Player added:', playerData);
-    console.log('All players:', players);
+
+    // Try to update the team table
+    if (updateTeamTable(teamNumber, pokemonData)) {
+        // Add the new player to our players array
+        players.push(pokemonData);
+        
+        // Show success message
+        showStatusMessage(`Pokemon added to Player ${teamNumber}'s team!`, 'success');
+        
+        // Close the modal popup
+        closeAddPlayerModal();
+    }
 }
 
 // Function to validate player data before saving
@@ -322,6 +327,50 @@ function showStatusMessage(message, type) {
             statusDiv.classList.remove('show');
         }, 3000);
     }
+}
+
+// Helper function to create table row HTML from Pokemon data
+function createPokemonTableRow(pokemon) {
+    return `<div class="table-row">${pokemon.name} | ${pokemon.Type1} | ${pokemon.Type2 || ''} | ${String(pokemon.DexNum).padStart(4, '0')}</div>`;
+}
+
+// Function to update specific team's table
+function updateTeamTable(teamNumber, pokemonData) {
+    console.log('Updating team table', teamNumber, pokemonData); // Debug log
+    
+    // Get the correct team container
+    const teamContainer = document.querySelector(`.player${teamNumber}-team .placeholder-table`);
+    console.log('Team container:', teamContainer); // Debug log
+    
+    if (!teamContainer) {
+        console.log('Team container not found!'); // Debug log
+        return false;
+    }
+
+    // Keep the header and add new row
+    const header = teamContainer.querySelector('.table-header');
+    const currentRows = teamContainer.querySelectorAll('.table-row');
+    
+    // Check team size limit (maximum 6 Pokemon)
+    if (currentRows.length >= 6) {
+        showStatusMessage('Team is full! Maximum 6 Pokemon allowed.', 'error');
+        return false;
+    }
+
+    // Clear placeholder data if this is the first real entry
+    if (currentRows.length === 3 && teamContainer.querySelector('.table-row').textContent.includes('Bulbasaur')) {
+        teamContainer.innerHTML = '';
+        teamContainer.appendChild(header);
+    }
+
+    // Create and add the new Pokemon row
+    const newRow = document.createElement('div');
+    newRow.className = 'table-row';
+    newRow.textContent = `${pokemonData.name} | ${pokemonData.Type1} | ${pokemonData.Type2 || ''} | ${String(pokemonData.DexNum).padStart(4, '0')}`;
+    teamContainer.appendChild(newRow);
+    
+    console.log('Row added:', newRow); // Debug log
+    return true;
 }
 
 // Security function to prevent XSS attacks
