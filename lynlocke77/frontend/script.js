@@ -33,7 +33,6 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded'); // Debug log
     initializeApp();        // Set up the application
     setupEventListeners();  // Set up all our button clicks and form submissions
-    loadContacts();         // Load contacts from the database
 });
 
 // FUNCTION DEFINITION - This is how we create reusable blocks of code
@@ -79,6 +78,17 @@ function initializeApp() {
             closeEditModal();
         }
     });
+
+    // Add event listeners for save and load buttons
+    const saveButton = document.querySelector('.btn-info');
+    if (saveButton) {
+        saveButton.addEventListener('click', saveTeams);
+    }
+
+    const loadButton = document.querySelector('.btn-secondary');
+    if (loadButton) {
+        loadButton.addEventListener('click', loadTeams);
+    }
     
     // KEYBOARD EVENT LISTENER - Listen for key presses
     document.addEventListener('keydown', function(event) {
@@ -230,7 +240,7 @@ function handleAddPlayer(event) {
     };
 
     console.log('Pokemon Data:', pokemonData); // Debug log
-    
+
     // Determine which team to add to based on which button was clicked
     const teamNumber = event.submitter.textContent.includes('Player 1') ? 1 : 2;
     console.log('Team Number:', teamNumber); // Debug log
@@ -501,6 +511,81 @@ async function handleAddContact(e) {
         showStatusMessage('Error adding contact', 'error');
     }
 }
+
+// Add these functions to script.js
+
+// Function to collect data from a team's table
+function collectTeamData(teamNumber) {
+    const teamRows = document.querySelectorAll(`.player${teamNumber}-team .table-row`);
+    return Array.from(teamRows).map(row => {
+        const [name, type1, type2, dexNum] = row.textContent.split('|').map(s => s.trim());
+        return {
+            TeamNumber: teamNumber,
+            Name: name,
+            Type1: type1,
+            Type2: type2 || '',
+            DexNum: dexNum,
+            Extra: ''
+        };
+    });
+}
+
+// Function to save teams
+async function saveTeams() {
+    // Collect team data
+    const team1Data = collectTeamData(1);
+    const team2Data = collectTeamData(2);
+    
+    try {
+        showStatusMessage('Saving teams...', 'info');
+        const response = await pywebview.api.save_teams([team1Data, team2Data]);
+        showStatusMessage(response.message, response.success ? 'success' : 'error');
+    } catch (error) {
+        console.error('Error saving teams:', error);
+        showStatusMessage('Error saving teams', 'error');
+    }
+}
+
+// Function to update the teams display with loaded data
+function updateTeamsDisplay(teamsData) {
+    // Clear existing teams
+    const team1Container = document.querySelector('.player1-team .placeholder-table');
+    const team2Container = document.querySelector('.player2-team .placeholder-table');
+    
+    if (team1Container && team2Container) {
+        // Preserve headers
+        const header = '<div class="table-header">Name | Primary Type | Secondary Type | Dex</div>';
+        team1Container.innerHTML = header;
+        team2Container.innerHTML = header;
+        
+        // Sort data by team number and update display
+        teamsData.forEach(pokemon => {
+            const container = pokemon.TeamNumber === '1' ? team1Container : team2Container;
+            const row = document.createElement('div');
+            row.className = 'table-row';
+            row.textContent = `${pokemon.Name} | ${pokemon.Type1} | ${pokemon.Type2} | ${pokemon.DexNum}`;
+            container.appendChild(row);
+        });
+    }
+}
+
+// Function to load teams
+async function loadTeams() {
+    try {
+        showStatusMessage('Loading teams...', 'info');
+        const response = await pywebview.api.load_teams();
+        if (response.success && response.data.length > 0) {
+            updateTeamsDisplay(response.data);
+            showStatusMessage(response.message, 'success');
+        } else {
+            showStatusMessage(response.message, 'info');
+        }
+    } catch (error) {
+        console.error('Error loading teams:', error);
+        showStatusMessage('Error loading teams', 'error');
+    }
+}
+
 
 // Function to handle updating an existing contact
 async function handleUpdateContact(e) {
