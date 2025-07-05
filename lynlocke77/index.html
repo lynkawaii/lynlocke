@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lynlocke</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <main class="main-layout">
+            <!-- Left Side: Player 1 Team -->
+            <section class="player-team player1-team">
+                <h2>Player 1 Team</h2>
+                <div class="team-content">
+                    <p>Placeholder</p>
+                    <div class="placeholder-table">
+                        <div class="table-header">Name | Primary Type | Secondary Type | Dex</div>
+                        <div class="table-row">Bulbasaur | Grass | Poison | 0001</div>
+                        <div class="table-row">Charmander | Fire | | 0007</div>
+                        <div class="table-row">Gholdengo | Ghost | Steel | 1000</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Center Column -->
+            <div class="center-column">
+                <!-- Current Team (Top) -->
+                <section class="current-team">
+                    <h2>Current Teams</h2>
+                    <div class="current-team-content">
+                        <p>Placeholder</p>
+                        <div class="game-status">
+                            <div class="status-item">
+                                <strong>Game Status:</strong> In Progress
+                            </div>
+                            <div class="status-item">
+                                <strong>Current Score:</strong> 45 - 42
+                            </div>
+                            <div class="status-item">
+                                <strong>Time Remaining:</strong> 08:32
+                            </div>
+                            <div class="status-item">
+                                <strong>Quarter:</strong> 3rd
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Main Menu (Bottom) -->
+                <section class="main-menu">
+                    <h2>Main Menu</h2>
+                    <div class="menu-buttons">
+                        <button class="menu-btn btn-primary">Start Game</button>
+                        <button class="menu-btn btn-success">Add Player</button>
+                        <button class="menu-btn btn-warning">Edit Team</button>
+                        <button class="menu-btn btn-info">View Stats</button>
+                        <button class="menu-btn btn-secondary">Settings</button>
+                        <button class="menu-btn btn-danger">Reset Game</button>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Right Side: Player 2 Team -->
+            <section class="player-team player2-team">
+                <h2>Player 2 Team</h2>
+                <div class="team-content">
+                    <p>Placeholder</p>
+                    <div class="placeholder-table">
+                        <div class="table-header">Name | Primary Type | Secondary Type | Dex</div>
+                        <div class="table-row">Bulbasaur | Grass | Poison | 0001</div>
+                        <div class="table-row">Charmander | Fire | | 0007</div>
+                        <div class="table-row">Gholdengo | Ghost | Steel | 1000</div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Status Messages -->
+        <div id="statusMessage" class="status-message"></div>
+    </div>
+
+    <!-- Modal for future use -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Edit Item</h2>
+            <form id="editForm">
+                <div class="form-group">
+                    <label for="editName">Name:</label>
+                    <input type="text" id="editName" name="name" required>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-success">Update</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Player Modal -->
+    <div id="addPlayerModal" class="modal">
+        <div class="modal-content add-player-modal">
+            <span class="close" onclick="closeAddPlayerModal()">&times;</span>
+            <h2>Add New Player</h2>
+            <form id="addPlayerForm">
+                <div class="form-group">
+                    <label for="playerName">Name: <span class="required">*</span></label>
+                    <input type="text" id="playerName" name="name" maxlength="20" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="primaryType">Primary Type: <span class="required">*</span></label>
+                    <select id="primaryType" name="Type1" required>
+                        <option value="">Select Primary Type</option>
+                        <option value="Normal">Normal</option>
+                        <option value="Fire">Fire</option>
+                        <option value="Water">Water</option>
+                        <option value="Electric">Electric</option>
+                        <option value="Grass">Grass</option>
+                        <option value="Ice">Ice</option>
+                        <option value="Fighting">Fighting</option>
+                        <option value="Poison">Poison</option>
+                        <option value="Ground">Ground</option>
+                        <option value="Flying">Flying</option>
+                        <option value="Psychic">Psychic</option>
+                        <option value="Bug">Bug</option>
+                        <option value="Rock">Rock</option>
+                        <option value="Ghost">Ghost</option>
+                        <option value="Dragon">Dragon</option>
+                        <option value="Dark">Dark</option>
+                        <option value="Steel">Steel</option>
+                        <option value="Fairy">Fairy</option>
+                        <option value="Light">Light</option>
+                        <option value="Shadow">Shadow</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="secondaryType">Secondary Type:</label>
+                    <select id="secondaryType" name="Type2">
+                        <option value="">Select Secondary Type</option>
+                        <option value="Normal">Normal</option>
+                        <option value="Fire">Fire</option>
+                        <option value="Water">Water</option>
+                        <option value="Electric">Electric</option>
+                        <option value="Grass">Grass</option>
+                        <option value="Ice">Ice</option>
+                        <option value="Fighting">Fighting</option>
+                        <option value="Poison">Poison</option>
+                        <option value="Ground">Ground</option>
+                        <option value="Flying">Flying</option>
+                        <option value="Psychic">Psychic</option>
+                        <option value="Bug">Bug</option>
+                        <option value="Rock">Rock</option>
+                        <option value="Ghost">Ghost</option>
+                        <option value="Dragon">Dragon</option>
+                        <option value="Dark">Dark</option>
+                        <option value="Steel">Steel</option>
+                        <option value="Fairy">Fairy</option>
+                        <option value="Light">Light</option>
+                        <option value="Shadow">Shadow</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="playerNumber">PokeDex Number: <span class="required">*</span></label>
+                    <input type="number" id="playerNumber" name="DexNum" min="1" max="9999" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="playerExtra">Extra:</label>
+                    <input type="text" id="playerExtra" name="Extra" maxlength="20">
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-success" value="1">Add Pokemon to Player 1</button>
+                    <button type="submit" class="btn btn-success" value="2">Add Pokemon to Player 2</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeAddPlayerModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
