@@ -40,6 +40,32 @@ function initializeApp() {
     // querySelector finds the first element that matches the CSS selector
     // '.btn-success' means "find an element with the class 'btn-success'"
     const addPlayerBtn = document.querySelector('.btn-success');
+
+     // Add click handlers for team tables
+    const player1Team = document.querySelector('.player1-team');
+    const player2Team = document.querySelector('.player2-team');
+    
+    if (player1Team) {
+        player1Team.addEventListener('click', handleRowSelection);
+    }
+    if (player2Team) {
+        player2Team.addEventListener('click', handleRowSelection);
+    }
+    
+    // Add click handler for "Add to Active Team" button
+    const addToActiveBtn = document.querySelector('.btn-primary');
+    if (addToActiveBtn) {
+        addToActiveBtn.addEventListener('click', addToActiveTeam);
+    }
+    
+    // Add click handler to clear selections when clicking outside
+    document.addEventListener('click', (event) => {
+        if (!event.target.closest('.player1-team') && 
+            !event.target.closest('.player2-team') && 
+            !event.target.closest('.btn-primary')) {
+            clearSelections();
+        }
+    });
     
     // IF STATEMENT - Only run this code if the button exists
     if (addPlayerBtn) {
@@ -764,6 +790,104 @@ function clearAllPlayers() {
     players = []; // Reset the array to empty
     showStatusMessage('All players cleared!', 'success');
 }
+
+// Add these functions to handle the matchup table
+
+let selectedPokemon = {
+    player1: null,
+    player2: null
+};
+
+// Function to handle row selection
+function handleRowSelection(event) {
+    const row = event.target.closest('.table-row');
+    if (!row) return;
+    
+    const isPlayer1Team = row.closest('.player1-team') !== null;
+    const team = isPlayer1Team ? 'player1' : 'player2';
+    
+    // Clear previous selection for this team
+    const previousSelection = document.querySelector(`.${team}-team .selected`);
+    if (previousSelection) {
+        previousSelection.classList.remove('selected');
+    }
+    
+    // Select new row
+    row.classList.add('selected');
+    selectedPokemon[team] = row;
+}
+
+// Function to parse row data
+function parseRowData(row) {
+    const [name, type1, type2, dexNum] = row.textContent.split('|').map(s => s.trim());
+    return { name, type1, type2, dexNum };
+}
+
+// Function to create matchup row
+function createMatchupRow(p1Row, p2Row) {
+    const p1Data = parseRowData(p1Row);
+    const p2Data = parseRowData(p2Row);
+    
+    const row = document.createElement('div');
+    row.className = 'matchup-row';
+    
+    const cells = [
+        p1Data.dexNum,
+        p1Data.type2,
+        p1Data.type1,
+        p1Data.name,
+        p2Data.name,
+        p2Data.type1,
+        p2Data.type2,
+        p2Data.dexNum
+    ];
+    
+    cells.forEach(content => {
+        const cell = document.createElement('div');
+        cell.className = 'matchup-cell';
+        cell.textContent = content || '-';
+        row.appendChild(cell);
+    });
+    
+    return row;
+}
+
+// Function to add matchup to table
+function addToActiveTeam() {
+    if (!selectedPokemon.player1 || !selectedPokemon.player2) {
+        showStatusMessage('Please select one Pokemon from each team', 'error');
+        return;
+    }
+    
+    const matchupRows = document.querySelector('.matchup-rows');
+    if (!matchupRows) {
+        showStatusMessage('Error: Matchup table not found', 'error');
+        return;
+    }
+    
+    // Check if we've reached the maximum number of rows (6)
+    if (matchupRows.children.length >= 6) {
+        showStatusMessage('Maximum number of matchups reached (6)', 'error');
+        return;
+    }
+    
+    const newRow = createMatchupRow(selectedPokemon.player1, selectedPokemon.player2);
+    matchupRows.appendChild(newRow);
+    
+    // Clear selections
+    clearSelections();
+    showStatusMessage('Matchup added successfully', 'success');
+}
+
+// Function to clear selections
+function clearSelections() {
+    document.querySelectorAll('.table-row.selected').forEach(row => {
+        row.classList.remove('selected');
+    });
+    selectedPokemon.player1 = null;
+    selectedPokemon.player2 = null;
+}
+
 
 // ==========================================
 // KEY CONCEPTS FOR BEGINNERS:
