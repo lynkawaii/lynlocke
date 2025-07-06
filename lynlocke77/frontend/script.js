@@ -143,6 +143,15 @@ function initializeApp() {
 
     const loadButton = document.querySelector('.btn-secondary');
     if (loadButton) loadButton.addEventListener('click', loadTeams);
+
+    // Remove from Team button (for matchup rows)
+    const removeFromTeamBtn = document.querySelector('.btn-warning');
+    if (removeFromTeamBtn) {
+        removeFromTeamBtn.addEventListener('click', removeSelectedMatchups);
+    }
+
+    setupMatchupRowSelection();
+
 }
 
 // ADD PLAYER FORM HANDLER
@@ -309,6 +318,9 @@ function updateMatchupsDisplay(matchupsData) {
         });
         matchupRows.appendChild(row);
     });
+
+    setupMatchupRowSelection(); // new line
+
 }
 
 // SAVE/LOAD TEAMS AND MATCHUPS
@@ -349,4 +361,34 @@ async function loadTeams() {
         console.error('Error loading data:', error);
         showStatusMessage('Error loading data', 'error');
     }
+}
+
+// Add event delegation for selecting matchup rows (supports multi-select with Ctrl/Cmd)
+function setupMatchupRowSelection() {
+    const matchupRows = document.querySelector('.matchup-rows');
+    if (!matchupRows) return;
+
+    matchupRows.addEventListener('click', function(event) {
+        const row = event.target.closest('.matchup-row');
+        if (!row) return;
+
+        if (event.ctrlKey || event.metaKey) {
+            // Toggle selection for multi-select
+            row.classList.toggle('selected');
+        } else {
+            // Single selection: clear all others
+            document.querySelectorAll('.matchup-row.selected').forEach(r => r.classList.remove('selected'));
+            row.classList.add('selected');
+        }
+    });
+}
+
+function removeSelectedMatchups() {
+    const selectedRows = document.querySelectorAll('.matchup-rows .matchup-row.selected');
+    if (selectedRows.length === 0) {
+        showStatusMessage('Select one or more matchup rows to remove.', 'info');
+        return;
+    }
+    selectedRows.forEach(row => row.remove());
+    showStatusMessage(`${selectedRows.length} matchup(s) removed.`, 'success');
 }

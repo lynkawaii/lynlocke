@@ -526,3 +526,8 @@ tr:hover {
     background-color: #e8f4f8;
     border: 2px solid #3498db;
 }
+
+.matchup-row.selected {
+    background-color: #ffe5e5;
+    border: 2px solid #e74c3c;
+}
