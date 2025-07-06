@@ -117,14 +117,14 @@ function initializeApp() {
     const addToActiveBtn = document.querySelector('.btn-primary');
     if (addToActiveBtn) addToActiveBtn.addEventListener('click', addToActiveTeam);
 
-    // Outside click clears selections
+    // Outside click clears selections, but NOT when interacting with Delete or the confirmation modal
     document.addEventListener('click', (event) => {
-        // If click is on the modal or inside it, don't clear selection
         if (
             event.target.closest('.player1-team') ||
             event.target.closest('.player2-team') ||
             event.target.closest('.btn-primary') ||
-            event.target.closest('deleteConfirmModal')
+            event.target.closest('.btn-danger') || // DELETE button
+            event.target.closest('#deleteConfirmModal')
         ) {
             return;
         }
