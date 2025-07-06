@@ -7,6 +7,13 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
+    <div id="splashScreen" class="splash-screen">
+        <div class="splash-message">
+            Welcome to Lynlocke!
+        </div>
+    </div>
+
     <div class="container">
         <main class="main-layout">
             <!-- Left Side: Player 1 Team -->
@@ -52,6 +59,11 @@
                         <button class="menu-btn btn-danger">Delete</button>
                         <button class="menu-btn btn-info">Save Teams</button>
                         <button class="menu-btn btn-secondary">Load Teams</button>
+                        
+                            <div class="sorting-mode">
+                                <label><input type="radio" name="sortingMode" value="simplified" checked> Simplified</label>
+                                <label><input type="radio" name="sortingMode" value="advanced"> Advanced Sorting</label>
+                            </div>
                     </div>
                 </section>
             </div>
@@ -179,7 +191,7 @@
     <div id="deleteConfirmModal" class="modal">
         <div class="modal-content">
             <h2>Confirm Deletion</h2>
-            <p>Are you sure you want to delete the selected Pokémon from the team(s)? This action cannot be undone.</p>
+            <p>Are you sure you want to delete the selected Pokémon from the teams? This action cannot be undone.</p>
             <div class="form-actions">
                 <button id="confirmDeleteBtn" class="btn btn-danger">Delete</button>
                 <button id="cancelDeleteBtn" class="btn btn-secondary">Cancel</button>

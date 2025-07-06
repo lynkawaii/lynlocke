@@ -106,6 +106,19 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+document.addEventListener('DOMContentLoaded', function() {
+    const splash = document.getElementById('splashScreen');
+    if (splash) {
+        splash.addEventListener('click', function() {
+            splash.classList.add('slide-out');
+            setTimeout(() => {
+                splash.style.display = 'none';
+            }, 700); // Match transition time
+        });
+    }
+});
+
+
 function initializeApp() {
     // Team row selection
     const player1Team = document.querySelector('.player1-team');
@@ -182,8 +195,21 @@ function initializeApp() {
         cancelDeleteBtn.addEventListener('click', closeDeleteConfirmModal);
     }
 
-    setupMatchupRowSelection();
+    // Sorting mode radio buttons
+    document.querySelectorAll('input[name="sortingMode"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.value === 'simplified') {
+                applySimplifiedSorting();
+            } else {
+                // Advanced sorting function placeholder
+                // applyAdvancedSorting();
+            }
+        });
+    });
 
+
+    setupMatchupRowSelection();
+    applySimplifiedSorting();
 }
 
 // ADD PLAYER FORM HANDLER
@@ -376,6 +402,9 @@ async function saveTeams() {
         console.error('Error saving data:', error);
         showStatusMessage('Error saving data', 'error');
     }
+
+    applySimplifiedSorting();
+
 }
 
 async function loadTeams() {
@@ -456,3 +485,113 @@ function deleteSelectedSideRows() {
     closeDeleteConfirmModal();
     clearSelections();
 }   
+
+function getCurrentMatchupNames() {
+    const names = { P1: [], P2: [], P1Type1: [], P2Type1: [] };
+    document.querySelectorAll('.matchup-rows .matchup-row').forEach(row => {
+        const cells = row.querySelectorAll('.matchup-cell');
+        if (cells.length === 8) {
+            names.P1.push(cells[3].textContent.trim());
+            names.P2.push(cells[4].textContent.trim());
+            names.P1Type1.push(cells[2].textContent.trim());
+            names.P2Type1.push(cells[5].textContent.trim());
+        }
+    });
+    return names;
+}
+
+function getTeamData(teamClass) {
+    return Array.from(document.querySelectorAll(`.${teamClass} .table-row`)).map(row => {
+        const [name, type1, type2, dexNum] = row.textContent.split('|').map(s => s.trim());
+        return { row, name, type1, type2, dexNum };
+    });
+}
+
+//SORTING LOGIC STARTS
+
+function applySimplifiedSorting() {
+    // 1. Get all matchups
+    const matchups = getCurrentMatchupNames();
+
+    // 2. Get teams
+    const p1Team = getTeamData('player1-team');
+    const p2Team = getTeamData('player2-team');
+    // Clear all highlights first
+    p1Team.forEach(e => e.row.classList.remove('matchup-green', 'matchup-red', 'matchup-yellow'));
+    p2Team.forEach(e => e.row.classList.remove('matchup-green', 'matchup-red', 'matchup-yellow'));
+
+    // 3. Highlight and sort
+    // For Player 1
+    let p1green = [], p1normal = [], p1red = [];
+    p1Team.forEach(entry => {
+        if (matchups.P1.includes(entry.name)) {
+            entry.row.classList.add('matchup-green');
+            p1green.push(entry);
+        } else if (matchups.P1Type1.includes(entry.type1)) {
+            entry.row.classList.add('matchup-red');
+            p1red.push(entry);
+        } else {
+            p1normal.push(entry);
+        }
+    });
+
+    // For Player 2
+    let p2green = [], p2normal = [], p2red = [];
+    p2Team.forEach(entry => {
+        if (matchups.P2.includes(entry.name)) {
+            entry.row.classList.add('matchup-green');
+            p2green.push(entry);
+        } else if (matchups.P2Type1.includes(entry.type1)) {
+            entry.row.classList.add('matchup-red');
+            p2red.push(entry);
+        } else {
+            p2normal.push(entry);
+        }
+    });
+
+    // 4. Yellow highlight: Name matches to a highlighted (green/red) in opposite team
+    const p1yellowNames = new Set();
+    const p2yellowNames = new Set();
+    // For Player 1: match to P2 green/red
+    p2Team.forEach(entry => {
+        if (entry.row.classList.contains('matchup-green') || entry.row.classList.contains('matchup-red')) {
+            // Find matching name in P1 normal entries
+            p1normal.forEach(e => {
+                if (e.name === entry.name) {
+                    e.row.classList.add('matchup-yellow');
+                    p1yellowNames.add(e.name);
+                }
+            });
+        }
+    });
+    // For Player 2: match to P1 green/red
+    p1Team.forEach(entry => {
+        if (entry.row.classList.contains('matchup-green') || entry.row.classList.contains('matchup-red')) {
+            // Find matching name in P2 normal entries
+            p2normal.forEach(e => {
+                if (e.name === entry.name) {
+                    e.row.classList.add('matchup-yellow');
+                    p2yellowNames.add(e.name);
+                }
+            });
+        }
+    });
+
+    // 5. Sort: greens (top), normals (middle), reds (bottom)
+    function reSortTeam(teamClass, green, normal, red) {
+        const container = document.querySelector(`.${teamClass} .placeholder-table`);
+        if (!container) return;
+        // Save header
+        const header = container.querySelector('.table-header');
+        // Remove all except header
+        container.innerHTML = '';
+        if (header) container.appendChild(header);
+        green.forEach(e => container.appendChild(e.row));
+        normal.forEach(e => container.appendChild(e.row));
+        red.forEach(e => container.appendChild(e.row));
+    }
+    reSortTeam('player1-team', p1green, p1normal, p1red);
+    reSortTeam('player2-team', p2green, p2normal, p2red);
+}
+
+//SORTING LOGIC ENDS
