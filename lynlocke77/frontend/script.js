@@ -119,9 +119,16 @@ function initializeApp() {
 
     // Outside click clears selections
     document.addEventListener('click', (event) => {
-        if (!event.target.closest('.player1-team') && 
-            !event.target.closest('.player2-team') && 
-            !event.target.closest('.btn-primary')) clearSelections();
+        // If click is on the modal or inside it, don't clear selection
+        if (
+            event.target.closest('.player1-team') ||
+            event.target.closest('.player2-team') ||
+            event.target.closest('.btn-primary') ||
+            event.target.closest('deleteConfirmModal')
+        ) {
+            return;
+        }
+        clearSelections();
     });
 
     // Add Player modal
@@ -148,6 +155,31 @@ function initializeApp() {
     const removeFromTeamBtn = document.querySelector('.btn-warning');
     if (removeFromTeamBtn) {
         removeFromTeamBtn.addEventListener('click', removeSelectedMatchups);
+    }
+
+    // Delete button logic
+    const deleteBtn = document.querySelector('.btn-danger');
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', function() {
+            // Only open modal if a side row is selected
+            const selectedP1 = document.querySelector('.player1-team .table-row.selected');
+            const selectedP2 = document.querySelector('.player2-team .table-row.selected');
+            if (!selectedP1 && !selectedP2) {
+                showStatusMessage('Select a row from Player 1 and/or Player 2 team to delete.', 'info');
+                return;
+            }
+            openDeleteConfirmModal();
+        });
+    }
+
+    // Modal confirm/cancel handlers
+    const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+    if (confirmDeleteBtn) {
+        confirmDeleteBtn.addEventListener('click', deleteSelectedSideRows);
+    }
+    const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+    if (cancelDeleteBtn) {
+        cancelDeleteBtn.addEventListener('click', closeDeleteConfirmModal);
     }
 
     setupMatchupRowSelection();
@@ -392,3 +424,35 @@ function removeSelectedMatchups() {
     selectedRows.forEach(row => row.remove());
     showStatusMessage(`${selectedRows.length} matchup(s) removed.`, 'success');
 }
+
+function openDeleteConfirmModal() {
+    document.getElementById('deleteConfirmModal').style.display = 'block';
+}
+
+function closeDeleteConfirmModal() {
+    document.getElementById('deleteConfirmModal').style.display = 'none';
+}
+
+function deleteSelectedSideRows() {
+    // Find selected rows in side tables
+    const selectedP1 = document.querySelector('.player1-team .table-row.selected');
+    const selectedP2 = document.querySelector('.player2-team .table-row.selected');
+    let deletedCount = 0;
+
+    if (selectedP1) {
+        selectedP1.remove();
+        deletedCount++;
+    }
+    if (selectedP2) {
+        selectedP2.remove();
+        deletedCount++;
+    }
+
+    if (deletedCount === 0) {
+        showStatusMessage('No side table row selected for deletion.', 'info');
+    } else {
+        showStatusMessage(`${deletedCount} Pokémon deleted from team(s).`, 'success');
+    }
+    closeDeleteConfirmModal();
+    clearSelections();
+}   
