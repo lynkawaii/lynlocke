@@ -3,29 +3,47 @@
 // This code manages team selection, matchups, and basic UI for the Lynlocke app
 // ==========================================
 
-// GLOBALS
+// ------------------------
+// GLOBALS & STATE
+// ------------------------
+
 let players = [];
 let currentData = [];
 let isEditing = false;
+let selectedPokemon = { player1: null, player2: null };
 
-let selectedPokemon = {
-    player1: null,
-    player2: null
-};
+// ------------------------
+// UTILITY FUNCTIONS
+// ------------------------
 
-// Status message utility
+// Status Messages
 function showStatusMessage(message, type) {
     const statusDiv = document.getElementById('statusMessage');
     if (statusDiv) {
         statusDiv.textContent = message;
         statusDiv.className = `status-message ${type} show`;
-        setTimeout(() => {
-            statusDiv.classList.remove('show');
-        }, 3000);
+        setTimeout(() => statusDiv.classList.remove('show'), 3000);
     }
 }
 
+// Check sorting mode
+function isAdvancedMode() {
+    const advRadio = document.querySelector('input[name="sortingMode"][value="advanced"]');
+    return advRadio && advRadio.checked;
+}
+
+function applyCurrentSorting() {
+    if (isAdvancedMode()) {
+        applyAdvancedSorting();
+    } else {
+        applySimplifiedSorting();
+    }
+}
+
+// ------------------------
 // MODAL HANDLING
+// ------------------------
+
 function openAddPlayerModal() {
     const modal = document.getElementById('addPlayerModal');
     if (modal) {
@@ -44,7 +62,18 @@ function closeAddPlayerModal() {
     }
 }
 
+function openDeleteConfirmModal() {
+    document.getElementById('deleteConfirmModal').style.display = 'block';
+}
+
+function closeDeleteConfirmModal() {
+    document.getElementById('deleteConfirmModal').style.display = 'none';
+}
+
+// ------------------------
 // DATA VALIDATION
+// ------------------------
+
 function validatePlayerData(playerData) {
     if (!playerData.name || playerData.name.length === 0) {
         showStatusMessage('Player name is required!', 'error');
@@ -77,7 +106,11 @@ function validatePlayerData(playerData) {
     return true;
 }
 
-// TEAM TABLES
+// ------------------------
+// TEAM & MATCHUP TABLES
+// ------------------------
+
+// Team Table Row Creation
 function createPokemonTableRow(pokemon) {
     return `<div class="table-row">${pokemon.name} | ${pokemon.Type1} | ${pokemon.Type2 || ''} | ${String(pokemon.DexNum).padStart(4, '0')}</div>`;
 }
@@ -98,26 +131,103 @@ function updateTeamTable(teamNumber, pokemonData) {
     return true;
 }
 
-// EVENT LISTENERS
+// Team Data Collection
+function collectTeamData(teamNumber) {
+    const teamRows = document.querySelectorAll(`.player${teamNumber}-team .table-row`);
+    return Array.from(teamRows).map(row => {
+        const [name, type1, type2, dexNum] = row.textContent.split('|').map(s => s.trim());
+        return {
+            TeamNumber: String(teamNumber),
+            Name: name,
+            Type1: type1,
+            Type2: type2 || '',
+            DexNum: dexNum,
+            Extra: ''
+        };
+    });
+}
+
+// Matchup Data Collection
+function collectMatchupsData() {
+    const matchupRows = document.querySelectorAll('.matchup-rows .matchup-row');
+    return Array.from(matchupRows).map(row => {
+        const cells = row.querySelectorAll('.matchup-cell');
+        return {
+            P1Dex: cells[0].textContent,
+            P2Type2: cells[1].textContent,
+            P1Type1: cells[2].textContent,
+            P1Name: cells[3].textContent,
+            P2Name: cells[4].textContent,
+            P2Type1: cells[5].textContent,
+            P2Type2: cells[6].textContent,
+            P2Dex: cells[7].textContent
+        };
+    });
+}
+
+// Display Functions
+function updateTeamsDisplay(teamsData) {
+    const team1Container = document.querySelector('.player1-team .placeholder-table');
+    const team2Container = document.querySelector('.player2-team .placeholder-table');
+    if (!team1Container || !team2Container) return;
+    const header = '<div class="table-header">Name | Primary Type | Secondary Type | Dex</div>';
+    team1Container.innerHTML = header;
+    team2Container.innerHTML = header;
+    teamsData.forEach(pokemon => {
+        const container = pokemon.TeamNumber === '1' ? team1Container : team2Container;
+        const row = document.createElement('div');
+        row.className = 'table-row';
+        row.textContent = `${pokemon.Name} | ${pokemon.Type1} | ${pokemon.Type2} | ${pokemon.DexNum}`;
+        container.appendChild(row);
+    });
+}
+
+function updateMatchupsDisplay(matchupsData) {
+    const matchupRows = document.querySelector('.matchup-rows');
+    if (!matchupRows) return;
+    matchupRows.innerHTML = '';
+    matchupsData.forEach(matchup => {
+        const row = document.createElement('div');
+        row.className = 'matchup-row';
+        [
+            matchup.P1Dex,
+            matchup.P2Type2,
+            matchup.P1Type1,
+            matchup.P1Name,
+            matchup.P2Name,
+            matchup.P2Type1,
+            matchup.P2Type2,
+            matchup.P2Dex
+        ].forEach(content => {
+            const cell = document.createElement('div');
+            cell.className = 'matchup-cell';
+            cell.textContent = content || '-';
+            row.appendChild(cell);
+        });
+        matchupRows.appendChild(row);
+    });
+    setupMatchupRowSelection();
+}
+
+// ------------------------
+// EVENT HANDLING & INIT
+// ------------------------
+
 document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
     document.addEventListener('keydown', function(event) {
         if (event.key === 'Escape') closeAddPlayerModal();
     });
-});
 
-document.addEventListener('DOMContentLoaded', function() {
+    // Splash screen animation
     const splash = document.getElementById('splashScreen');
     if (splash) {
         splash.addEventListener('click', function() {
             splash.classList.add('slide-out');
-            setTimeout(() => {
-                splash.style.display = 'none';
-            }, 700); // Match transition time
+            setTimeout(() => { splash.style.display = 'none'; }, 700);
         });
     }
 });
-
 
 function initializeApp() {
     // Team row selection
@@ -130,7 +240,7 @@ function initializeApp() {
     const addToActiveBtn = document.querySelector('.btn-primary');
     if (addToActiveBtn) addToActiveBtn.addEventListener('click', addToActiveTeam);
 
-    // Outside click clears selections, but NOT when interacting with Delete or the confirmation modal
+    // Outside click clears selections, but NOT when interacting with certain UI
     document.addEventListener('click', (event) => {
         if (
             event.target.closest('.player1-team') ||
@@ -138,23 +248,20 @@ function initializeApp() {
             event.target.closest('.btn-primary') ||
             event.target.closest('.btn-danger') || // DELETE button
             event.target.closest('#deleteConfirmModal')
-        ) {
-            return;
-        }
+        ) return;
         clearSelections();
     });
 
-    // Add Player modal
+    // Add Player Modal
     const addPlayerBtn = document.querySelector('.btn-success');
     if (addPlayerBtn) addPlayerBtn.addEventListener('click', openAddPlayerModal);
 
+    // Add Player Form
     const addPlayerForm = document.getElementById('addPlayerForm');
     if (addPlayerForm) {
         const newForm = addPlayerForm.cloneNode(true);
         addPlayerForm.parentNode.replaceChild(newForm, addPlayerForm);
-        newForm.addEventListener('submit', function(event) {
-            handleAddPlayer(event);
-        });
+        newForm.addEventListener('submit', handleAddPlayer);
     }
 
     // Save/Load buttons
@@ -164,17 +271,14 @@ function initializeApp() {
     const loadButton = document.querySelector('.btn-secondary');
     if (loadButton) loadButton.addEventListener('click', loadTeams);
 
-    // Remove from Team button (for matchup rows)
+    // Remove from Team (Matchup) button
     const removeFromTeamBtn = document.querySelector('.btn-warning');
-    if (removeFromTeamBtn) {
-        removeFromTeamBtn.addEventListener('click', removeSelectedMatchups);
-    }
+    if (removeFromTeamBtn) removeFromTeamBtn.addEventListener('click', removeSelectedMatchups);
 
     // Delete button logic
     const deleteBtn = document.querySelector('.btn-danger');
     if (deleteBtn) {
         deleteBtn.addEventListener('click', function() {
-            // Only open modal if a side row is selected
             const selectedP1 = document.querySelector('.player1-team .table-row.selected');
             const selectedP2 = document.querySelector('.player2-team .table-row.selected');
             if (!selectedP1 && !selectedP2) {
@@ -185,34 +289,27 @@ function initializeApp() {
         });
     }
 
-    // Modal confirm/cancel handlers
+    // Delete modal confirm/cancel
     const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
-    if (confirmDeleteBtn) {
-        confirmDeleteBtn.addEventListener('click', deleteSelectedSideRows);
-    }
+    if (confirmDeleteBtn) confirmDeleteBtn.addEventListener('click', deleteSelectedSideRows);
+
     const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
-    if (cancelDeleteBtn) {
-        cancelDeleteBtn.addEventListener('click', closeDeleteConfirmModal);
-    }
+    if (cancelDeleteBtn) cancelDeleteBtn.addEventListener('click', closeDeleteConfirmModal);
 
     // Sorting mode radio buttons
     document.querySelectorAll('input[name="sortingMode"]').forEach(radio => {
-        radio.addEventListener('change', function() {
-            if (this.value === 'simplified') {
-                applySimplifiedSorting();
-            } else {
-                // Advanced sorting function placeholder
-                // applyAdvancedSorting();
-            }
-        });
+        radio.addEventListener('change', applyCurrentSorting);
     });
 
-
     setupMatchupRowSelection();
-    applySimplifiedSorting();
+    applyCurrentSorting();
 }
 
-// ADD PLAYER FORM HANDLER
+// ------------------------
+// TEAM/MATCHUP LOGIC
+// ------------------------
+
+// Add Player Handler
 function handleAddPlayer(event) {
     event.preventDefault();
     const formData = new FormData(event.target);
@@ -229,26 +326,11 @@ function handleAddPlayer(event) {
         players.push(pokemonData);
         showStatusMessage(`Pokemon added to Player ${teamNumber}'s team!`, 'success');
         closeAddPlayerModal();
+        applyCurrentSorting();
     }
 }
 
-// TEAM DATA COLLECTION
-function collectTeamData(teamNumber) {
-    const teamRows = document.querySelectorAll(`.player${teamNumber}-team .table-row`);
-    return Array.from(teamRows).map(row => {
-        const [name, type1, type2, dexNum] = row.textContent.split('|').map(s => s.trim());
-        return {
-            TeamNumber: String(teamNumber),
-            Name: name,
-            Type1: type1,
-            Type2: type2 || '',
-            DexNum: dexNum,
-            Extra: ''
-        };
-    });
-}
-
-// MATCHUP MANAGEMENT
+// Team Row Selection Handler
 function handleRowSelection(event) {
     const row = event.target.closest('.table-row');
     if (!row) return;
@@ -260,6 +342,23 @@ function handleRowSelection(event) {
     selectedPokemon[team] = row;
 }
 
+// Matchup Row Selection (supports multi-select with Ctrl/Cmd)
+function setupMatchupRowSelection() {
+    const matchupRows = document.querySelector('.matchup-rows');
+    if (!matchupRows) return;
+    matchupRows.addEventListener('click', function(event) {
+        const row = event.target.closest('.matchup-row');
+        if (!row) return;
+        if (event.ctrlKey || event.metaKey) {
+            row.classList.toggle('selected');
+        } else {
+            document.querySelectorAll('.matchup-row.selected').forEach(r => r.classList.remove('selected'));
+            row.classList.add('selected');
+        }
+    });
+}
+
+// Add to Active Team (Matchup)
 function parseRowData(row) {
     const [name, type1, type2, dexNum] = row.textContent.split('|').map(s => s.trim());
     return { name, type1, type2, dexNum };
@@ -307,81 +406,48 @@ function addToActiveTeam() {
     matchupRows.appendChild(newRow);
     clearSelections();
     showStatusMessage('Matchup added successfully', 'success');
+    applyCurrentSorting();
+}
+
+function removeSelectedMatchups() {
+    const selectedRows = document.querySelectorAll('.matchup-rows .matchup-row.selected');
+    if (selectedRows.length === 0) {
+        showStatusMessage('Select one or more matchup rows to remove.', 'info');
+        return;
+    }
+    selectedRows.forEach(row => row.remove());
+    showStatusMessage(`${selectedRows.length} matchup(s) removed.`, 'success');
+    applyCurrentSorting();
 }
 
 function clearSelections() {
-    document.querySelectorAll('.table-row.selected').forEach(row => {
-        row.classList.remove('selected');
-    });
+    document.querySelectorAll('.table-row.selected').forEach(row => row.classList.remove('selected'));
     selectedPokemon.player1 = null;
     selectedPokemon.player2 = null;
 }
 
-// MATCHUP DATA COLLECTION
-function collectMatchupsData() {
-    const matchupRows = document.querySelectorAll('.matchup-rows .matchup-row');
-    return Array.from(matchupRows).map(row => {
-        const cells = row.querySelectorAll('.matchup-cell');
-        return {
-            P1Dex: cells[0].textContent,
-            P2Type2: cells[1].textContent,
-            P1Type1: cells[2].textContent,
-            P1Name: cells[3].textContent,
-            P2Name: cells[4].textContent,
-            P2Type1: cells[5].textContent,
-            P2Type2: cells[6].textContent,
-            P2Dex: cells[7].textContent
-        };
-    });
+// Delete from side teams
+function deleteSelectedSideRows() {
+    const selectedP1 = document.querySelector('.player1-team .table-row.selected');
+    const selectedP2 = document.querySelector('.player2-team .table-row.selected');
+    let deletedCount = 0;
+    if (selectedP1) { selectedP1.remove(); deletedCount++; }
+    if (selectedP2) { selectedP2.remove(); deletedCount++; }
+
+    if (deletedCount === 0) {
+        showStatusMessage('No side table row selected for deletion.', 'info');
+    } else {
+        showStatusMessage(`${deletedCount} Pokémon deleted from team(s).`, 'success');
+    }
+    closeDeleteConfirmModal();
+    clearSelections();
+    applyCurrentSorting();
 }
 
-// TEAM/MATCHUP DISPLAY
-function updateTeamsDisplay(teamsData) {
-    const team1Container = document.querySelector('.player1-team .placeholder-table');
-    const team2Container = document.querySelector('.player2-team .placeholder-table');
-    if (!team1Container || !team2Container) return;
-    const header = '<div class="table-header">Name | Primary Type | Secondary Type | Dex</div>';
-    team1Container.innerHTML = header;
-    team2Container.innerHTML = header;
-    teamsData.forEach(pokemon => {
-        const container = pokemon.TeamNumber === '1' ? team1Container : team2Container;
-        const row = document.createElement('div');
-        row.className = 'table-row';
-        row.textContent = `${pokemon.Name} | ${pokemon.Type1} | ${pokemon.Type2} | ${pokemon.DexNum}`;
-        container.appendChild(row);
-    });
-}
-
-function updateMatchupsDisplay(matchupsData) {
-    const matchupRows = document.querySelector('.matchup-rows');
-    if (!matchupRows) return;
-    matchupRows.innerHTML = '';
-    matchupsData.forEach(matchup => {
-        const row = document.createElement('div');
-        row.className = 'matchup-row';
-        [
-            matchup.P1Dex,
-            matchup.P2Type2,
-            matchup.P1Type1,
-            matchup.P1Name,
-            matchup.P2Name,
-            matchup.P2Type1,
-            matchup.P2Type2,
-            matchup.P2Dex
-        ].forEach(content => {
-            const cell = document.createElement('div');
-            cell.className = 'matchup-cell';
-            cell.textContent = content || '-';
-            row.appendChild(cell);
-        });
-        matchupRows.appendChild(row);
-    });
-
-    setupMatchupRowSelection(); // new line
-
-}
-
+// ------------------------
 // SAVE/LOAD TEAMS AND MATCHUPS
+// ------------------------
+
 async function saveTeams() {
     try {
         const team1Data = collectTeamData(1);
@@ -402,9 +468,7 @@ async function saveTeams() {
         console.error('Error saving data:', error);
         showStatusMessage('Error saving data', 'error');
     }
-
-    applySimplifiedSorting();
-
+    applyCurrentSorting();
 }
 
 async function loadTeams() {
@@ -422,70 +486,14 @@ async function loadTeams() {
         console.error('Error loading data:', error);
         showStatusMessage('Error loading data', 'error');
     }
+    applyCurrentSorting();
 }
 
-// Add event delegation for selecting matchup rows (supports multi-select with Ctrl/Cmd)
-function setupMatchupRowSelection() {
-    const matchupRows = document.querySelector('.matchup-rows');
-    if (!matchupRows) return;
+// ------------------------
+// SORTING LOGIC
+// ------------------------
 
-    matchupRows.addEventListener('click', function(event) {
-        const row = event.target.closest('.matchup-row');
-        if (!row) return;
-
-        if (event.ctrlKey || event.metaKey) {
-            // Toggle selection for multi-select
-            row.classList.toggle('selected');
-        } else {
-            // Single selection: clear all others
-            document.querySelectorAll('.matchup-row.selected').forEach(r => r.classList.remove('selected'));
-            row.classList.add('selected');
-        }
-    });
-}
-
-function removeSelectedMatchups() {
-    const selectedRows = document.querySelectorAll('.matchup-rows .matchup-row.selected');
-    if (selectedRows.length === 0) {
-        showStatusMessage('Select one or more matchup rows to remove.', 'info');
-        return;
-    }
-    selectedRows.forEach(row => row.remove());
-    showStatusMessage(`${selectedRows.length} matchup(s) removed.`, 'success');
-}
-
-function openDeleteConfirmModal() {
-    document.getElementById('deleteConfirmModal').style.display = 'block';
-}
-
-function closeDeleteConfirmModal() {
-    document.getElementById('deleteConfirmModal').style.display = 'none';
-}
-
-function deleteSelectedSideRows() {
-    // Find selected rows in side tables
-    const selectedP1 = document.querySelector('.player1-team .table-row.selected');
-    const selectedP2 = document.querySelector('.player2-team .table-row.selected');
-    let deletedCount = 0;
-
-    if (selectedP1) {
-        selectedP1.remove();
-        deletedCount++;
-    }
-    if (selectedP2) {
-        selectedP2.remove();
-        deletedCount++;
-    }
-
-    if (deletedCount === 0) {
-        showStatusMessage('No side table row selected for deletion.', 'info');
-    } else {
-        showStatusMessage(`${deletedCount} Pokémon deleted from team(s).`, 'success');
-    }
-    closeDeleteConfirmModal();
-    clearSelections();
-}   
-
+// Utility: Get matchup names and types for sorting
 function getCurrentMatchupNames() {
     const names = { P1: [], P2: [], P1Type1: [], P2Type1: [] };
     document.querySelectorAll('.matchup-rows .matchup-row').forEach(row => {
@@ -500,6 +508,20 @@ function getCurrentMatchupNames() {
     return names;
 }
 
+function getCurrentMatchupTypesAdvanced() {
+    const types = { P1Type1: [], P1Type2: [], P2Type1: [], P2Type2: [] };
+    document.querySelectorAll('.matchup-rows .matchup-row').forEach(row => {
+        const cells = row.querySelectorAll('.matchup-cell');
+        if (cells.length === 8) {
+            types.P1Type1.push(cells[2].textContent.trim());
+            types.P1Type2.push(cells[1].textContent.trim());
+            types.P2Type1.push(cells[5].textContent.trim());
+            types.P2Type2.push(cells[6].textContent.trim());
+        }
+    });
+    return types;
+}
+
 function getTeamData(teamClass) {
     return Array.from(document.querySelectorAll(`.${teamClass} .table-row`)).map(row => {
         const [name, type1, type2, dexNum] = row.textContent.split('|').map(s => s.trim());
@@ -507,21 +529,14 @@ function getTeamData(teamClass) {
     });
 }
 
-//SORTING LOGIC STARTS
-
+// Simplified Sort
 function applySimplifiedSorting() {
-    // 1. Get all matchups
     const matchups = getCurrentMatchupNames();
-
-    // 2. Get teams
     const p1Team = getTeamData('player1-team');
     const p2Team = getTeamData('player2-team');
-    // Clear all highlights first
     p1Team.forEach(e => e.row.classList.remove('matchup-green', 'matchup-red', 'matchup-yellow'));
     p2Team.forEach(e => e.row.classList.remove('matchup-green', 'matchup-red', 'matchup-yellow'));
 
-    // 3. Highlight and sort
-    // For Player 1
     let p1green = [], p1normal = [], p1red = [];
     p1Team.forEach(entry => {
         if (matchups.P1.includes(entry.name)) {
@@ -535,7 +550,6 @@ function applySimplifiedSorting() {
         }
     });
 
-    // For Player 2
     let p2green = [], p2normal = [], p2red = [];
     p2Team.forEach(entry => {
         if (matchups.P2.includes(entry.name)) {
@@ -549,41 +563,26 @@ function applySimplifiedSorting() {
         }
     });
 
-    // 4. Yellow highlight: Name matches to a highlighted (green/red) in opposite team
-    const p1yellowNames = new Set();
-    const p2yellowNames = new Set();
-    // For Player 1: match to P2 green/red
+    // Yellow highlight: Name matches to a highlighted (green/red) in opposite team
     p2Team.forEach(entry => {
         if (entry.row.classList.contains('matchup-green') || entry.row.classList.contains('matchup-red')) {
-            // Find matching name in P1 normal entries
             p1normal.forEach(e => {
-                if (e.name === entry.name) {
-                    e.row.classList.add('matchup-yellow');
-                    p1yellowNames.add(e.name);
-                }
+                if (e.name === entry.name) e.row.classList.add('matchup-yellow');
             });
         }
     });
-    // For Player 2: match to P1 green/red
     p1Team.forEach(entry => {
         if (entry.row.classList.contains('matchup-green') || entry.row.classList.contains('matchup-red')) {
-            // Find matching name in P2 normal entries
             p2normal.forEach(e => {
-                if (e.name === entry.name) {
-                    e.row.classList.add('matchup-yellow');
-                    p2yellowNames.add(e.name);
-                }
+                if (e.name === entry.name) e.row.classList.add('matchup-yellow');
             });
         }
     });
 
-    // 5. Sort: greens (top), normals (middle), reds (bottom)
     function reSortTeam(teamClass, green, normal, red) {
         const container = document.querySelector(`.${teamClass} .placeholder-table`);
         if (!container) return;
-        // Save header
         const header = container.querySelector('.table-header');
-        // Remove all except header
         container.innerHTML = '';
         if (header) container.appendChild(header);
         green.forEach(e => container.appendChild(e.row));
@@ -594,4 +593,75 @@ function applySimplifiedSorting() {
     reSortTeam('player2-team', p2green, p2normal, p2red);
 }
 
-//SORTING LOGIC ENDS
+// Advanced Sort
+function applyAdvancedSorting() {
+    const matchups = getCurrentMatchupNames();
+    const types = getCurrentMatchupTypesAdvanced();
+    const p1Team = getTeamData('player1-team');
+    const p2Team = getTeamData('player2-team');
+    p1Team.forEach(e => e.row.classList.remove('matchup-green', 'matchup-red', 'matchup-yellow'));
+    p2Team.forEach(e => e.row.classList.remove('matchup-green', 'matchup-red', 'matchup-yellow'));
+
+    let p1green = [], p1normal = [], p1red = [];
+    p1Team.forEach(entry => {
+        if (matchups.P1.includes(entry.name)) {
+            entry.row.classList.add('matchup-green');
+            p1green.push(entry);
+        } else if (
+            (types.P1Type1.includes(entry.type1) || types.P1Type1.includes(entry.type2) ||
+             types.P1Type2.includes(entry.type1) || types.P1Type2.includes(entry.type2))
+            && (entry.type1 || entry.type2)
+        ) {
+            entry.row.classList.add('matchup-red');
+            p1red.push(entry);
+        } else {
+            p1normal.push(entry);
+        }
+    });
+
+    let p2green = [], p2normal = [], p2red = [];
+    p2Team.forEach(entry => {
+        if (matchups.P2.includes(entry.name)) {
+            entry.row.classList.add('matchup-green');
+            p2green.push(entry);
+        } else if (
+            (types.P2Type1.includes(entry.type1) || types.P2Type1.includes(entry.type2) ||
+             types.P2Type2.includes(entry.type1) || types.P2Type2.includes(entry.type2))
+            && (entry.type1 || entry.type2)
+        ) {
+            entry.row.classList.add('matchup-red');
+            p2red.push(entry);
+        } else {
+            p2normal.push(entry);
+        }
+    });
+
+    // Yellow highlight: Name matches to a highlighted (green/red) in opposite team
+    p2Team.forEach(entry => {
+        if (entry.row.classList.contains('matchup-green') || entry.row.classList.contains('matchup-red')) {
+            p1normal.forEach(e => {
+                if (e.name === entry.name) e.row.classList.add('matchup-yellow');
+            });
+        }
+    });
+    p1Team.forEach(entry => {
+        if (entry.row.classList.contains('matchup-green') || entry.row.classList.contains('matchup-red')) {
+            p2normal.forEach(e => {
+                if (e.name === entry.name) e.row.classList.add('matchup-yellow');
+            });
+        }
+    });
+
+    function reSortTeam(teamClass, green, normal, red) {
+        const container = document.querySelector(`.${teamClass} .placeholder-table`);
+        if (!container) return;
+        const header = container.querySelector('.table-header');
+        container.innerHTML = '';
+        if (header) container.appendChild(header);
+        green.forEach(e => container.appendChild(e.row));
+        normal.forEach(e => container.appendChild(e.row));
+        red.forEach(e => container.appendChild(e.row));
+    }
+    reSortTeam('player1-team', p1green, p1normal, p1red);
+    reSortTeam('player2-team', p2green, p2normal, p2red);
+}
