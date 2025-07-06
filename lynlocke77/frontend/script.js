@@ -557,142 +557,168 @@
     }
 
 // Function to save teams
+// Function to save teams
 async function saveTeams() {
     try {
-        showStatusMessage('Preparing to save teams...', 'info');
-        
-        // Debug logging
-        console.log('Starting save operation');
-        
-        // Collect team data with logging
-        console.log('Collecting team data');
+        // Collect all data
         const team1Data = collectTeamData(1);
-        console.log('Team 1 data:', team1Data);
         const team2Data = collectTeamData(2);
-        console.log('Team 2 data:', team2Data);
-        
-        // Collect matchups data with logging
-        console.log('Collecting matchups data');
         const matchupsData = collectMatchupsData();
-        console.log('Matchups data:', matchupsData);
         
-        // Create data object explicitly
+        // Create the data object to save
         const saveData = {
-            teams: [team1Data, team2Data],
+            teams: [].concat(team1Data, team2Data),
             matchups: matchupsData
         };
         
-        console.log('Final data object:', saveData);
+        console.log('Saving data:', saveData); // Debug log
         
-        // Save the data
-        showStatusMessage('Saving teams...', 'info');
+        showStatusMessage('Saving data...', 'info');
         const response = await pywebview.api.save_teams(saveData);
-        console.log('Save response:', response);
         
         if (response.success) {
-            showStatusMessage(response.message || 'Teams saved successfully', 'success');
+            showStatusMessage('Data saved successfully', 'success');
         } else {
-            showStatusMessage(response.message || 'Failed to save teams', 'error');
+            showStatusMessage(response.message || 'Failed to save data', 'error');
         }
     } catch (error) {
-        console.error('Error in saveTeams:', error);
-        showStatusMessage('Error saving teams: ' + error.message, 'error');
+        console.error('Error saving data:', error);
+        showStatusMessage('Error saving data', 'error');
     }
 }
 
-// Function to collect team data
+
+// Function to collect team data for saving
 function collectTeamData(teamNumber) {
-    try {
-        const teamRows = document.querySelectorAll(`.player${teamNumber}-team .table-row`);
-        return Array.from(teamRows).map(row => {
-            const [name, type1, type2, dexNum] = row.textContent.split('|').map(s => s.trim());
-            return {
-                TeamNumber: String(teamNumber),
-                Name: name,
-                Type1: type1,
-                Type2: type2 || '',
-                DexNum: dexNum,
-                Extra: ''
-            };
-        });
-    } catch (error) {
-        console.error(`Error collecting team ${teamNumber} data:`, error);
-        return [];
-    }
+    const teamRows = document.querySelectorAll(`.player${teamNumber}-team .table-row`);
+    return Array.from(teamRows).map(row => {
+        const [name, type1, type2, dexNum] = row.textContent.split('|').map(s => s.trim());
+        return {
+            TeamNumber: String(teamNumber),
+            Name: name,
+            Type1: type1,
+            Type2: type2 || '',
+            DexNum: dexNum,
+            Extra: ''
+        };
+    });
 }
 
-// Function to collect matchups data
+// Function to collect matchups data for saving
 function collectMatchupsData() {
-    try {
-        const matchupRows = document.querySelectorAll('.matchup-rows .matchup-row');
-        return Array.from(matchupRows).map(row => {
-            const cells = row.querySelectorAll('.matchup-cell');
-            return {
-                P1Dex: cells[0].textContent,
-                P2Type2: cells[1].textContent,
-                P1Type1: cells[2].textContent,
-                P1Name: cells[3].textContent,
-                P2Name: cells[4].textContent,
-                P2Type1: cells[5].textContent,
-                P2Type2: cells[6].textContent,
-                P2Dex: cells[7].textContent
-            };
-        });
-    } catch (error) {
-        console.error('Error collecting matchups data:', error);
-        return [];
-    }
+    const matchupRows = document.querySelectorAll('.matchup-rows .matchup-row');
+    return Array.from(matchupRows).map(row => {
+        const cells = row.querySelectorAll('.matchup-cell');
+        return {
+            P1Dex: cells[0].textContent,
+            P2Type2: cells[1].textContent,
+            P1Type1: cells[2].textContent,
+            P1Name: cells[3].textContent,
+            P2Name: cells[4].textContent,
+            P2Type1: cells[5].textContent,
+            P2Type2: cells[6].textContent,
+            P2Dex: cells[7].textContent
+        };
+    });
 }
 
 
-
-    // Function to load teams
-// Function to update the teams display with loaded data
+// Function to update teams display
 function updateTeamsDisplay(teamsData) {
-    // Clear existing teams
     const team1Container = document.querySelector('.player1-team .placeholder-table');
     const team2Container = document.querySelector('.player2-team .placeholder-table');
     
-    if (team1Container && team2Container) {
-        // Preserve headers
-        const header = '<div class="table-header">Name | Primary Type | Secondary Type | Dex</div>';
-        team1Container.innerHTML = header;
-        team2Container.innerHTML = header;
-        
-        // Sort data by team number and update display
-        teamsData.forEach(pokemon => {
-            const container = pokemon.TeamNumber === '1' ? team1Container : team2Container;
-            const row = document.createElement('div');
-            row.className = 'table-row';
-            row.textContent = `${pokemon.Name} | ${pokemon.Type1} | ${pokemon.Type2} | ${pokemon.DexNum}`;
-            container.appendChild(row);
-        });
+    if (!team1Container || !team2Container) {
+        console.error('Team containers not found');
+        return;
     }
+
+    // Preserve headers
+    const header = '<div class="table-header">Name | Primary Type | Secondary Type | Dex</div>';
+    team1Container.innerHTML = header;
+    team2Container.innerHTML = header;
+    
+    // Filter and display teams
+    teamsData.forEach(pokemon => {
+        const container = pokemon.TeamNumber === '1' ? team1Container : team2Container;
+        const row = document.createElement('div');
+        row.className = 'table-row';
+        row.textContent = `${pokemon.Name} | ${pokemon.Type1} | ${pokemon.Type2} | ${pokemon.DexNum}`;
+        container.appendChild(row);
+    });
 }
+
+// Function to update matchups display
+function updateMatchupsDisplay(matchupsData) {
+    const matchupRows = document.querySelector('.matchup-rows');
+    if (!matchupRows) {
+        console.error('Matchup rows container not found');
+        return;
+    }
+
+    // Clear existing matchups
+    matchupRows.innerHTML = '';
+
+    // Add each matchup
+    matchupsData.forEach(matchup => {
+        const row = document.createElement('div');
+        row.className = 'matchup-row';
+        
+        [
+            matchup.P1Dex,
+            matchup.P2Type2,
+            matchup.P1Type1,
+            matchup.P1Name,
+            matchup.P2Name,
+            matchup.P2Type1,
+            matchup.P2Type2,
+            matchup.P2Dex
+        ].forEach(content => {
+            const cell = document.createElement('div');
+            cell.className = 'matchup-cell';
+            cell.textContent = content || '-';
+            row.appendChild(cell);
+        });
+        
+        matchupRows.appendChild(row);
+    });
+}
+
+
+
 
 // Function to load teams
 async function loadTeams() {
     try {
-        showStatusMessage('Loading teams...', 'info');
+        showStatusMessage('Loading data...', 'info');
         const response = await pywebview.api.load_teams();
-        if (response.success && response.data) {
-            if (response.data.teams && response.data.teams.length > 0) {
-                updateTeamsDisplay(response.data.teams);
+        console.log('Load response:', response); // Debug log
+        
+        if (response.success) {
+            // Check for teams data
+            if (response.teams && response.teams.length > 0) {
+                updateTeamsDisplay(response.teams);
             }
             
-            if (response.data.matchups && response.data.matchups.length > 0) {
-                updateMatchupsDisplay(response.data.matchups);
+            // Check for matchups data
+            if (response.matchups && response.matchups.length > 0) {
+                updateMatchupsDisplay(response.matchups);
             }
             
-            showStatusMessage(response.message || 'Teams loaded successfully', 'success');
+            showStatusMessage('Data loaded successfully', 'success');
         } else {
-            showStatusMessage(response.message || 'No saved teams found', 'info');
+            showStatusMessage(response.message || 'No saved data found', 'info');
         }
     } catch (error) {
-        console.error('Error loading teams:', error);
-        showStatusMessage('Error loading teams', 'error');
+        console.error('Error loading data:', error);
+        showStatusMessage('Error loading data', 'error');
     }
 }
+
+
+
+
+
     // Function to handle updating an existing contact
     async function handleUpdateContact(e) {
         e.preventDefault();
@@ -731,7 +757,7 @@ async function loadTeams() {
 
 
 
-    
+
     // Function to edit a contact
     function editContact(contactId) {
         // FIND METHOD - Find the first item in array that matches the condition
