@@ -10,7 +10,6 @@ class DataManager:
         self.matchups_headers = ['P1Dex', 'P2Type2', 'P1Type1', 'P1Name', 'P2Name', 'P2Type1', 'P2Type2', 'P2Dex']
         os.makedirs('data', exist_ok=True)
 
-
     def save_teams(self, teams_data):
         """Save teams and matchups data"""
         try:
@@ -18,14 +17,13 @@ class DataManager:
             with open(self.teams_file, 'w', newline='', encoding='utf-8') as file:
                 writer = csv.DictWriter(file, fieldnames=self.teams_headers)
                 writer.writeheader()
-                for team in data['teams']:
-                    writer.writerows(team)
+                writer.writerows(teams_data['teams'])
             
             # Save matchups data
             with open(self.matchups_file, 'w', newline='', encoding='utf-8') as file:
                 writer = csv.DictWriter(file, fieldnames=self.matchups_headers)
                 writer.writeheader()
-                writer.writerows(data['matchups'])
+                writer.writerows(teams_data['matchups'])
             
             return {
                 'success': True,
