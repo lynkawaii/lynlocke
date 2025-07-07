@@ -119,13 +119,13 @@ function updateTeamTable(teamNumber, pokemonData) {
     const teamContainer = document.querySelector(`.player${teamNumber}-team .placeholder-table`);
     if (!teamContainer) return false;
     const header = teamContainer.querySelector('.table-header');
-    const currentRows = teamContainer.querySelectorAll('.table-row');
+    const currentRows = teamContainer.querySelectorAll('.pokemon-row');
     if (currentRows.length >= 6) {
         showStatusMessage('Team is full! Maximum 6 Pokemon allowed.', 'error');
         return false;
     }
     const newRow = document.createElement('div');
-    newRow.className = 'table-row';
+    newRow.className = 'table-row pokemon-row';
     newRow.textContent = `${pokemonData.name} | ${pokemonData.Type1} | ${pokemonData.Type2 || ''} | ${String(pokemonData.DexNum).padStart(4, '0')}`;
     teamContainer.appendChild(newRow);
     return true;
