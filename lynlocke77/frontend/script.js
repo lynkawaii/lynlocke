@@ -494,6 +494,11 @@ async function loadTeams() {
 // ------------------------
 
 // Utility: Get matchup names and types for sorting
+
+function sortByName(arr) {
+    return arr.sort((a, b) => a.name.localeCompare(b.name));
+}
+
 function getCurrentMatchupNames() {
     const names = { P1: [], P2: [], P1Type1: [], P2Type1: [] };
     document.querySelectorAll('.matchup-rows .matchup-row').forEach(row => {
@@ -579,18 +584,20 @@ function applySimplifiedSorting() {
         }
     });
 
+    // 5. Sort: greens (top), normals (middle), reds (bottom), each alphabetically by name
     function reSortTeam(teamClass, green, normal, red) {
         const container = document.querySelector(`.${teamClass} .placeholder-table`);
         if (!container) return;
         const header = container.querySelector('.table-header');
         container.innerHTML = '';
         if (header) container.appendChild(header);
-        green.forEach(e => container.appendChild(e.row));
-        normal.forEach(e => container.appendChild(e.row));
-        red.forEach(e => container.appendChild(e.row));
+        sortByName(green).forEach(e => container.appendChild(e.row));
+        sortByName(normal).forEach(e => container.appendChild(e.row));
+        sortByName(red).forEach(e => container.appendChild(e.row));
     }
     reSortTeam('player1-team', p1green, p1normal, p1red);
     reSortTeam('player2-team', p2green, p2normal, p2red);
+
 }
 
 // Advanced Sort
@@ -658,10 +665,11 @@ function applyAdvancedSorting() {
         const header = container.querySelector('.table-header');
         container.innerHTML = '';
         if (header) container.appendChild(header);
-        green.forEach(e => container.appendChild(e.row));
-        normal.forEach(e => container.appendChild(e.row));
-        red.forEach(e => container.appendChild(e.row));
+        sortByName(green).forEach(e => container.appendChild(e.row));
+        sortByName(normal).forEach(e => container.appendChild(e.row));
+        sortByName(red).forEach(e => container.appendChild(e.row));
     }
     reSortTeam('player1-team', p1green, p1normal, p1red);
     reSortTeam('player2-team', p2green, p2normal, p2red);
+
 }
