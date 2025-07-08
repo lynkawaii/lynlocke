@@ -372,3 +372,25 @@ section h2 {
         margin: 10% auto;
     }
 }   
+
+/* Fix overflow for team lists */
+.player-team {      
+    /* Already has min-height: 100%; */
+    display: flex;
+    flex-direction: column;
+    max-height: 60vh ;   /* or whatever fits your layout, e.g. 50vh, 70vh */
+    overflow: hidden;   /* Hide overflow outside the box */
+}
+
+.placeholder-table {
+    flex: 1 1 auto;
+    min-height: 0; /* IMPORTANT for flex containers to allow shrinking */
+    max-height: 55%; /* Slightly less than .player-team to account for header etc. */
+    overflow-y: auto;
+}
+
+.table-header.team-header {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
