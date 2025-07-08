@@ -170,14 +170,25 @@ function updateTeamsDisplay(teamsData) {
     const team1Container = document.querySelector('.player1-team .placeholder-table');
     const team2Container = document.querySelector('.player2-team .placeholder-table');
     if (!team1Container || !team2Container) return;
-    const header = '<div class="table-header">Name | Primary Type | Secondary Type | Dex</div>';
+    const header = `
+        <div class="table-header team-header">
+            <div>Name</div>
+            <div>Primary Type</div>
+            <div>Secondary Type</div>
+            <div>Dex</div>
+        </div>`;
     team1Container.innerHTML = header;
     team2Container.innerHTML = header;
     teamsData.forEach(pokemon => {
         const container = pokemon.TeamNumber === '1' ? team1Container : team2Container;
         const row = document.createElement('div');
         row.className = 'table-row';
-        row.textContent = `${pokemon.Name} | ${pokemon.Type1} | ${pokemon.Type2} | ${pokemon.DexNum}`;
+        row.innerHTML = `
+            <div>${pokemon.Name}</div>
+            <div>${pokemon.Type1}</div>
+            <div>${pokemon.Type2}</div>
+            <div>${pokemon.DexNum}</div>
+        `;
         container.appendChild(row);
     });
 }
