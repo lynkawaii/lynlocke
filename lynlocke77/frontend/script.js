@@ -302,12 +302,24 @@ function updateMatchupsDisplay(matchupsData) {
     const matchupRows = document.querySelector('.matchup-rows');
     if (!matchupRows) return;
     matchupRows.innerHTML = '';
+    
     matchupsData.forEach(matchup => {
         const row = document.createElement('div');
         row.className = 'matchup-row';
+        
+        // Store data in dataset for easy access
+        row.dataset.p1Name = matchup.P1Name;
+        row.dataset.p1Type1 = matchup.P1Type1;
+        row.dataset.p1Type2 = matchup.P1Type2;
+        row.dataset.p1Dex = matchup.P1Dex;
+        row.dataset.p2Name = matchup.P2Name;
+        row.dataset.p2Type1 = matchup.P2Type1;
+        row.dataset.p2Type2 = matchup.P2Type2;
+        row.dataset.p2Dex = matchup.P2Dex;
+        
         [
             matchup.P1Dex,
-            matchup.P2Type2,
+            matchup.P1Type2,
             matchup.P1Type1,
             matchup.P1Name,
             matchup.P2Name,
@@ -320,8 +332,10 @@ function updateMatchupsDisplay(matchupsData) {
             cell.textContent = content || '-';
             row.appendChild(cell);
         });
+        
         matchupRows.appendChild(row);
     });
+    
     setupMatchupRowSelection();
 }
 
@@ -532,15 +546,91 @@ function setupMatchupRowSelection() {
 
 // Add to Active Team (Matchup)
 function parseRowData(row) {
-    const [name, type1, type2, dexNum] = row.textContent.split('|').map(s => s.trim());
-    return { name, type1, type2, dexNum };
+    // Skip header rows
+    if (row.classList.contains('table-header') || row.classList.contains('team-header')) {
+        return null;
+    }
+    
+    // Try to get data from dataset first (preferred method)
+    if (row.dataset.name) {
+        return {
+            name: row.dataset.name,
+            type1: row.dataset.type1,
+            type2: row.dataset.type2,
+            dexNum: row.dataset.dexNum
+        };
+    }
+    
+    // Parse from cell structure
+    const cells = row.querySelectorAll('.cell-name, .cell-type1, .cell-type2, .cell-dex');
+    if (cells.length === 4) {
+        return {
+            name: cells[0].textContent.trim(),
+            type1: cells[1].textContent.trim(),
+            type2: cells[2].textContent.trim(),
+            dexNum: cells[3].textContent.trim()
+        };
+    }
+    
+    // Fallback: try to parse from div structure
+    const nameCell = row.querySelector('.cell-name');
+    const type1Cell = row.querySelector('.cell-type1');
+    const type2Cell = row.querySelector('.cell-type2');
+    const dexCell = row.querySelector('.cell-dex');
+    
+    if (nameCell && type1Cell && type2Cell && dexCell) {
+        return {
+            name: nameCell.textContent.trim(),
+            type1: type1Cell.textContent.trim(),
+            type2: type2Cell.textContent.trim(),
+            dexNum: dexCell.textContent.trim()
+        };
+    }
+    
+    // Last resort: try to extract from combined text
+    // This assumes the format is "Name Primary Secondary 0001" (space-separated)
+    const text = row.textContent.trim();
+    const parts = text.split(/\s+/);
+    if (parts.length >= 4) {
+        // Last part should be the dex number
+        const dexNum = parts[parts.length - 1];
+        // Second to last should be secondary type
+        const type2 = parts[parts.length - 2];
+        // Third to last should be primary type
+        const type1 = parts[parts.length - 3];
+        // Everything else is the name
+        const name = parts.slice(0, parts.length - 3).join(' ');
+        
+        return { name, type1, type2, dexNum };
+    }
+    
+    return null;
 }
 
 function createMatchupRow(p1Row, p2Row) {
     const p1Data = parseRowData(p1Row);
     const p2Data = parseRowData(p2Row);
+    
+    if (!p1Data || !p2Data) {
+        console.error('Failed to extract data from rows');
+        console.log('P1 Row:', p1Row);
+        console.log('P2 Row:', p2Row);
+        return null;
+    }
+    
     const row = document.createElement('div');
     row.className = 'matchup-row';
+    
+    // Store data for easy access
+    row.dataset.p1Name = p1Data.name;
+    row.dataset.p1Type1 = p1Data.type1;
+    row.dataset.p1Type2 = p1Data.type2;
+    row.dataset.p1Dex = p1Data.dexNum;
+    row.dataset.p2Name = p2Data.name;
+    row.dataset.p2Type1 = p2Data.type1;
+    row.dataset.p2Type2 = p2Data.type2;
+    row.dataset.p2Dex = p2Data.dexNum;
+    
     const cells = [
         p1Data.dexNum,
         p1Data.type2,
@@ -551,12 +641,14 @@ function createMatchupRow(p1Row, p2Row) {
         p2Data.type2,
         p2Data.dexNum
     ];
+    
     cells.forEach(content => {
         const cell = document.createElement('div');
         cell.className = 'matchup-cell';
         cell.textContent = content || '-';
         row.appendChild(cell);
     });
+    
     return row;
 }
 

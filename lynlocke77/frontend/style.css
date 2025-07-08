@@ -334,14 +334,148 @@ section h2 {
 }
 
 /* --- SORTING MODE RADIO --- */
+/* === ENHANCED RADIO BUTTONS === */
 .sorting-mode {
     display: flex;
     justify-content: center;
     gap: 20px;
     margin-top: 20px;
     font-size: 1rem;
+    color: #7A7A7A;
 }
-.sorting-mode input[type="radio"] { margin-right: 8px; }
+
+.sorting-mode label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 12px 20px;
+    background-color: #FAEEE5;
+    border: 2px solid #EAD8F4;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    position: relative;
+    user-select: none;
+    min-width: 120px;
+    justify-content: center;
+}
+
+.sorting-mode label:hover {
+    background-color: #F2C4D6;
+    border-color: #DBC0E7;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.sorting-mode input[type="radio"] {
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border: 2px solid #DBC0E7;
+    border-radius: 50%;
+    margin-right: 10px;
+    position: relative;
+    background-color: #fff;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+
+.sorting-mode input[type="radio"]:checked {
+    border-color: #7D5A94;
+    background-color: #EAD8F4;
+}
+
+.sorting-mode input[type="radio"]:checked::after {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background-color: #7D5A94;
+    border-radius: 50%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    transition: all 0.3s ease;
+}
+
+.sorting-mode input[type="radio"]:checked + span {
+    color: #7D5A94;
+    font-weight: 600;
+}
+
+.sorting-mode label:has(input[type="radio"]:checked) {
+    background-color: #EAD8F4;
+    border-color: #7D5A94;
+    box-shadow: 0 2px 6px rgba(125, 90, 148, 0.2);
+}
+
+/* Alternative: Card-style radio buttons */
+.sorting-mode-cards {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 20px;
+    font-size: 1rem;
+}
+
+.sorting-mode-cards label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    padding: 16px 20px;
+    background-color: #FAEEE5;
+    border: 2px solid #EAD8F4;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    position: relative;
+    user-select: none;
+    min-width: 100px;
+    text-align: center;
+}
+
+.sorting-mode-cards label:hover {
+    background-color: #F2C4D6;
+    border-color: #DBC0E7;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.sorting-mode-cards input[type="radio"] {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #DBC0E7;
+    border-radius: 50%;
+    margin-bottom: 8px;
+    position: relative;
+    background-color: #fff;
+    transition: all 0.3s ease;
+}
+
+.sorting-mode-cards input[type="radio"]:checked {
+    border-color: #7D5A94;
+    background-color: #7D5A94;
+}
+
+.sorting-mode-cards input[type="radio"]:checked::after {
+    content: '✓';
+    position: absolute;
+    color: #fff;
+    font-size: 12px;
+    font-weight: bold;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.sorting-mode-cards label:has(input[type="radio"]:checked) {
+    background-color: #EAD8F4;
+    border-color: #7D5A94;
+    box-shadow: 0 4px 8px rgba(125, 90, 148, 0.2);
+    color: #7D5A94;
+}
 
 /* --- RESPONSIVE DESIGN --- */
 @media (max-width: 768px) {
@@ -533,7 +667,7 @@ section h2 {
 /* === TABLES === */
 .table-header {
   background-color: #C9E6EE; /* Jagged Ice */
-  color: #e0e5e7;
+  color: #ffffff;
   padding: 10px;
   font-weight: bold;
   border-radius: 4px;
