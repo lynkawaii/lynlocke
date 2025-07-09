@@ -40,6 +40,13 @@ function applyCurrentSorting() {
     }
 }
 
+function normalizeType(typeValue) {
+    if (!typeValue || typeValue === '-' || typeValue.trim() === '') {
+        return null;
+    }
+    return typeValue.trim();
+}
+
 // ------------------------
 // MODAL HANDLING
 // ------------------------
@@ -366,14 +373,14 @@ function createMatchupRow(p1Row, p2Row) {
     row.dataset.p2Dex = p2Data.dexNum;
     
     const cells = [
-        p1Data.dexNum,
-        p1Data.type2,
-        p1Data.type1,
-        p1Data.name,
-        p2Data.name,
-        p2Data.type1,
-        p2Data.type2,
-        p2Data.dexNum
+        p1Data.dexNum,    // P1Dex
+        p1Data.type2,     // 
+        p1Data.type1,     // P1Type1
+        p1Data.name,      // P1Name
+        p2Data.name,      // P2Name
+        p2Data.type1,     // P2Type1
+        p2Data.type2,     // 
+        p2Data.dexNum     // P2Dex
     ];
     
     cells.forEach(content => {
@@ -778,20 +785,34 @@ function getCurrentMatchupData() {
             // Use dataset if available
             data.P1Names.push(row.dataset.p1Name);
             data.P2Names.push(row.dataset.p2Name);
-            data.P1Types.type1.push(row.dataset.p1Type1);
-            data.P1Types.type2.push(row.dataset.p1Type2);
-            data.P2Types.type1.push(row.dataset.p2Type1);
-            data.P2Types.type2.push(row.dataset.p2Type2);
+            
+            // Normalize types and only add non-empty values
+            const p1Type1 = normalizeType(row.dataset.p1Type1);
+            const p1Type2 = normalizeType(row.dataset.p1Type2);
+            const p2Type1 = normalizeType(row.dataset.p2Type1);
+            const p2Type2 = normalizeType(row.dataset.p2Type2);
+            
+            if (p1Type1) data.P1Types.type1.push(p1Type1);
+            if (p1Type2) data.P1Types.type2.push(p1Type2);
+            if (p2Type1) data.P2Types.type1.push(p2Type1);
+            if (p2Type2) data.P2Types.type2.push(p2Type2);
         } else {
             // Fallback to cell parsing
             const cells = row.querySelectorAll('.matchup-cell');
             if (cells.length === 8) {
                 data.P1Names.push(cells[3].textContent.trim());
                 data.P2Names.push(cells[4].textContent.trim());
-                data.P1Types.type1.push(cells[2].textContent.trim());
-                data.P1Types.type2.push(cells[1].textContent.trim());
-                data.P2Types.type1.push(cells[5].textContent.trim());
-                data.P2Types.type2.push(cells[6].textContent.trim());
+                
+                // Normalize types and only add non-empty values
+                const p1Type1 = normalizeType(cells[2].textContent);
+                const p1Type2 = normalizeType(cells[1].textContent);
+                const p2Type1 = normalizeType(cells[5].textContent);
+                const p2Type2 = normalizeType(cells[6].textContent);
+                
+                if (p1Type1) data.P1Types.type1.push(p1Type1);
+                if (p1Type2) data.P1Types.type2.push(p1Type2);
+                if (p2Type1) data.P2Types.type1.push(p2Type1);
+                if (p2Type2) data.P2Types.type2.push(p2Type2);
             }
         }
     });
@@ -810,8 +831,8 @@ function getTeamDataForSorting(teamClass) {
             teamData.push({
                 row: row,
                 name: data.name,
-                type1: data.type1,
-                type2: data.type2,
+                type1: normalizeType(data.type1),
+                type2: normalizeType(data.type2),
                 dexNum: data.dexNum
             });
         }
@@ -836,7 +857,8 @@ function applySimplifiedSorting() {
         if (matchupData.P1Names.includes(entry.name)) {
             entry.row.classList.add('matchup-green');
             p1green.push(entry);
-        } else if (matchupData.P1Types.type1.includes(entry.type1)) {
+        } else if (entry.type1 && matchupData.P1Types.type1.includes(entry.type1)) {
+            // Only check type1 in simplified mode, and only if type1 is not empty
             entry.row.classList.add('matchup-red');
             p1red.push(entry);
         } else {
@@ -850,7 +872,8 @@ function applySimplifiedSorting() {
         if (matchupData.P2Names.includes(entry.name)) {
             entry.row.classList.add('matchup-green');
             p2green.push(entry);
-        } else if (matchupData.P2Types.type1.includes(entry.type1)) {
+        } else if (entry.type1 && matchupData.P2Types.type1.includes(entry.type1)) {
+            // Only check type1 in simplified mode, and only if type1 is not empty
             entry.row.classList.add('matchup-red');
             p2red.push(entry);
         } else {
@@ -865,6 +888,7 @@ function applySimplifiedSorting() {
     reSortTeam('player1-team', p1green, p1normal, p1red);
     reSortTeam('player2-team', p2green, p2normal, p2red);
 }
+
 
 
 // Improved advanced sorting
@@ -915,11 +939,18 @@ function applyAdvancedSorting() {
 
 // Helper function to check type matches for advanced sorting
 function hasTypeMatch(entry, matchupTypes) {
-    return (matchupTypes.type1.includes(entry.type1) || 
-            matchupTypes.type1.includes(entry.type2) ||
-            matchupTypes.type2.includes(entry.type1) || 
-            matchupTypes.type2.includes(entry.type2)) &&
-           (entry.type1 || entry.type2);
+    // Only check types that are not null/empty
+    const hasType1Match = entry.type1 && (
+        matchupTypes.type1.includes(entry.type1) || 
+        matchupTypes.type2.includes(entry.type1)
+    );
+    
+    const hasType2Match = entry.type2 && (
+        matchupTypes.type1.includes(entry.type2) || 
+        matchupTypes.type2.includes(entry.type2)
+    );
+    
+    return hasType1Match || hasType2Match;
 }
 
 // Helper function to apply yellow highlighting
@@ -959,3 +990,11 @@ function reSortTeam(teamClass, green, normal, red) {
     sortByName(normal).forEach(e => container.appendChild(e.row));
     sortByName(red).forEach(e => container.appendChild(e.row));
 }
+
+
+
+
+
+
+
+// I love my bf
