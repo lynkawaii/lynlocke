@@ -204,11 +204,11 @@ function updateTeamTable(teamNumber, pokemonData) {
     if (!teamContainer) return false;
     
     // Count existing Pokemon rows (exclude header)
-    const currentRows = teamContainer.querySelectorAll('.pokemon-row');
-    if (currentRows.length >= 6) {
-        showStatusMessage('Team is full! Maximum 6 Pokemon allowed.', 'error');
-        return false;
-    }
+    //const currentRows = teamContainer.querySelectorAll('.pokemon-row');
+    //if (currentRows.length >= 6) {
+    //    showStatusMessage('Team is full! Maximum 6 Pokemon allowed.', 'error');
+    //   return false;
+    //}
     
     // Create standardized row
     const newRow = createStandardTableRow(pokemonData);
